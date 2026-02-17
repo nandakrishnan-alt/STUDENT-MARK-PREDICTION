@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradePredictor AI - Smart Student Marks Prediction</title>
+    <!-- External Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #8b5cf6;
+            /* Violet */
+            --secondary: #ec4899;
+            /* Pink */
+            --accent: #06b6d4;
+            /* Cyan */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --glow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient Background Animations */
+        .ambient-light {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            top: -10%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--secondary);
+            bottom: -10%;
+            right: -10%;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        .container {
+            width: 90%;
+            height: 90vh;
+            max-width: 1100px;
+            max-height: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+            padding: 40px;
+            perspective: 1000px;
+            overflow-y: auto;
+            /* Allow internal scrolling if needed */
+            scrollbar-width: thin;
+            /* Firefox */
+            scrollbar-color: var(--primary) transparent;
+        }
+
+        .container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .container::-webkit-scrollbar-thumb {
+            background-color: var(--primary);
+            border-radius: 4px;
+        }
+
+        .container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* Glass Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Input Section */
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-container {
+            position: relative;
+            padding: 10px 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--primary);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .value-display {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin: 1rem 0;
+            text-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+            transition: color 0.3s;
+        }
+
+        .value-unit {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Result Section */
+        .result-box {
+            margin-top: 2rem;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .result-box.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .prediction-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction-value {
+            font-size: 5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.3));
+        }
+
+        .prediction-context {
+            font-size: 1rem;
+            color: var(--accent);
+        }
+
+        /* Chart Section */
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 20px;
+                gap: 20px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .value-display {
+                font-size: 3rem;
+            }
+
+            .prediction-value {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-light">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard / Input Panel -->
+        <div class="card input-section">
+            <div class="header">
+                <h1>GradePredictor <span style="color:var(--accent)">AI</span></h1>
+                <p class="subtitle">Predict student performance using Linear Regression.</p>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span>Study Time</span>
+                    <span id="hoursVal">5.0 hrs</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="hoursSlider" min="0" max="15" step="0.1" value="5">
+                </div>
+                <div class="value-display">
+                    <span id="displayHours">5.0</span><span class="value-unit">hrs</span>
+                </div>
+            </div>
+
+            <div class="result-box visible">
+                <div class="prediction-label">Estimated Score</div>
+                <div class="prediction-value" id="predictionScore">--</div>
+                <div class="prediction-context" id="predictionContext">Adjust slider to predict</div>
+            </div>
+        </div>
+
+        <!-- Visualization Panel -->
+        <div class="card chart-section">
+            <canvas id="predictionChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Python Logic Ported to JS ---
+        // Based on Linear Regression trained on student_marks.csv
+        // Slope (Coef): ~10.04 | Intercept: ~18.80
+        const MODEL = {
+            slope: 10.0400735183343,
+            intercept: 18.801741540087196
+        };
+
+        // --- 2. Training Data (Embedded from CSV) ---
+        const RAW_DATA = [
+            { x: 1, y: 20 }, { x: 2, y: 35 }, { x: 3, y: 50 }, { x: 4, y: 65 },
+            { x: 5, y: 75 }, { x: 6, y: 85 }, { x: 7, y: 90 }, { x: 8, y: 95 },
+            { x: 1.5, y: 25 }, { x: 2.5, y: 42 }, { x: 3.2, y: 53 }, { x: 3.8, y: 60 },
+            { x: 4.5, y: 70 }, { x: 5.2, y: 78 }, { x: 5.8, y: 82 }, { x: 6.5, y: 88 },
+            { x: 7.5, y: 92 }, { x: 8.5, y: 97 }, { x: 9, y: 99 }
+        ];
+
+        // --- 3. Application Logic ---
+        const slider = document.getElementById('hoursSlider');
+        const hoursVal = document.getElementById('hoursVal');
+        const displayHours = document.getElementById('displayHours');
+        const predictionScore = document.getElementById('predictionScore');
+        const predictionContext = document.getElementById('predictionContext');
+        let chartInstance = null;
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+
+            // Generate Line Points (Start to End of Chart)
+            const lineStart = { x: 0, y: predict(0) };
+            const lineEnd = { x: 15, y: predict(15) };
+
+            chartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Student Data',
+                            data: RAW_DATA,
+                            backgroundColor: 'rgba(236, 72, 153, 0.6)', // Pink
+                            borderColor: 'rgba(236, 72, 153, 1)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Regression Line',
+                            type: 'line',
+                            data: [lineStart, lineEnd],
+                            borderColor: 'rgba(139, 92, 246, 0.5)', // Violet
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0
+                        },
+                        {
+                            label: 'Your Prediction',
+                            data: [], // Dynamic point
+                            backgroundColor: '#06b6d4', // Cyan
+                            borderColor: '#fff',
+                            borderWidth: 3,
+                            pointRadius: 10,
+                            pointHoverRadius: 12,
+                            pointStyle: 'circle'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: { display: true, text: 'Hours Studied', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0, max: 15
+                        },
+                        y: {
+                            title: { display: true, text: 'Marks Scored', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0, max: 110 // Allow slight overflow
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `(${context.parsed.x} hrs, ${context.parsed.y.toFixed(1)} marks)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 400,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Prediction Function (The Core logic)
+        function predict(hours) {
+            let score = (MODEL.slope * hours) + MODEL.intercept;
+            // Clamp score between 0 and 100 logic (optional, but realistic)
+            return Math.max(0, Math.min(100, score)); // Allowing >100 for linear purity but clamped for UI text usually
+        }
+
+        // Update UI
+        function updatePrediction() {
+            const hours = parseFloat(slider.value);
+            const score = predict(hours);
+
+            // Text Updates
+            hoursVal.textContent = `${hours.toFixed(1)} hrs`;
+            displayHours.textContent = hours.toFixed(1);
+
+            // Animate Score Count roughly
+            predictionScore.textContent = score.toFixed(1);
+
+            // Contextual Feedback
+            if (score > 90) {
+                predictionContext.textContent = "Excellent! Probable distinction.";
+                predictionContext.style.color = "#4ade80"; // Green
+            } else if (score > 75) {
+                predictionContext.textContent = "Great job! Keep pushing.";
+                predictionContext.style.color = "#06b6d4"; // Cyan
+            } else if (score > 50) {
+                predictionContext.textContent = "Good pass. More study recommended.";
+                predictionContext.style.color = "#facc15"; // Yellow
+            } else {
+                predictionContext.textContent = "Risk of failing. Study more!";
+                predictionContext.style.color = "#f87171"; // Red
+            }
+
+            // Update Chart
+            if (chartInstance) {
+                chartInstance.data.datasets[2].data = [{ x: hours, y: score }];
+                chartInstance.update('none'); // Update without full re-render animation
+            }
+        }
+
+        // Event Listeners
+        slider.addEventListener('input', updatePrediction);
+
+        // Confetti Trigger on High Score (Debounced slightly)
+        let lastConfetti = 0;
+        slider.addEventListener('change', () => {
+            const score = predict(parseFloat(slider.value));
+            const now = Date.now();
+            if (score > 95 && (now - lastConfetti > 2000)) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#8b5cf6', '#ec4899', '#06b6d4']
+                });
+                lastConfetti = now;
+            }
+        });
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            updatePrediction();
+        });
+
+    </script>
+</body>
+
+</html>
